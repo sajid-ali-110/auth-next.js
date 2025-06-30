@@ -1,0 +1,66 @@
+import { connect } from "@/dbConfig/dbConfig";
+import User from "@/models/userModel";
+import { NextRequest, NextResponse } from "next/server";
+import bcryptjs from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+connect();
+
+export async function POST(request: NextRequest) {
+  try {
+    const reqBody = await request.json();
+    const { email, password } = reqBody;
+    console.log(reqBody);
+
+    const user = await User.findOne({ email }); // ✅ added await here
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User does not exist!" }, // ✅ fixed typo
+        { status: 400 }
+      );
+    }
+
+    console.log("user exists"); // ✅ fixed typo
+
+    const validPassword = await bcryptjs.compare(password, user.password);
+
+    if (!validPassword) {
+      return NextResponse.json(
+        { error: "Check your credentials!" },
+        { status: 400 }
+      );
+    }
+
+    const tokenData = {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+    };
+
+    // ✅ jwt.sign is synchronous — no await needed
+    const token = jwt.sign(tokenData, process.env.TOKEN_SECRET as string, {
+      expiresIn: "1d",
+    });
+
+    const response = NextResponse.json({
+      message: "Logged in successfully!",
+      success: true,
+    });
+
+    response.cookies.set("token", token, {
+      httpOnly: true,
+    });
+
+    return response;
+
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json(
+      { error: "An unexpected error occurred." },
+      { status: 500 }
+    );
+  }
+}
