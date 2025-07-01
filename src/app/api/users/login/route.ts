@@ -12,16 +12,16 @@ export async function POST(request: NextRequest) {
     const { email, password } = reqBody;
     console.log(reqBody);
 
-    const user = await User.findOne({ email }); // ✅ added await here
+    const user = await User.findOne({ email });
 
     if (!user) {
       return NextResponse.json(
-        { error: "User does not exist!" }, // ✅ fixed typo
+        { error: "User does not exist!" },
         { status: 400 }
       );
     }
 
-    console.log("user exists"); // ✅ fixed typo
+    console.log("user exists");
 
     const validPassword = await bcryptjs.compare(password, user.password);
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
     };
 
-    // ✅ jwt.sign is synchronous — no await needed
+    // jwt.sign is synchronous — no await needed
     const token = jwt.sign(tokenData, process.env.TOKEN_SECRET as string, {
       expiresIn: "1d",
     });
